@@ -1,33 +1,49 @@
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-import numpy as np
-
-plot_markers = ["o", "v", "^", "8", "s", "p", "P", "*", "h", "X", "D", "d"]
 
 
 def plot_experiment(experiment):
-    xlabels = []
-    ylabels = []
+    dataset_sizes = []
+    m_vals = []
     heatmap_data = []
+    training_threshold = 5.4
+    print(experiment.runs)
     for run in experiment.runs:
-        if not (run.n in ylabels):
-            ylabels.insert(0, run.n)
-        if not (run.m in xlabels):
-            xlabels.append(run.m)
+        if not (run.n in dataset_sizes):
+            dataset_sizes.insert(0, run.n)
+        if not (run.m in m_vals):
+            m_vals.append(run.m)
     i = 0
-    for _ in ylabels:
+    min_model_num_params = []
+    # print(experiment.runs)
+    for _ in dataset_sizes:
         yrow = []
-        for _ in xlabels:
+        min_m = 1e8
+        for _ in m_vals:
             yrow.append(experiment.runs[i].training_loss_values[-1])
+            if (
+                experiment.runs[i].training_loss_values[-1] < training_threshold
+                and experiment.runs[i].m < min_m
+            ):
+                min_m = experiment.runs[i].m
+                min_model_num_params.append(experiment.runs[i].model_num_params)
             i = i + 1
         heatmap_data.insert(0, yrow)
+    print("Heatmap Data")
     print(heatmap_data)
-    print(xlabels)
-    print(ylabels)
-    plot_heatmap(experiment, heatmap_data, xlabels, ylabels)
-    for row in heatmap_data:
+    print("M vals")
+    print(m_vals)
+    print("Dataset Sizes")
+    print(dataset_sizes)
+    plot_heatmap(
+        experiment=experiment, data=heatmap_data, xlabels=m_vals, ylabels=dataset_sizes
+    )
 
-    plot_lineplot(experiment)
+    dataset_sizes = dataset_sizes[::-1]  # reverses order of list
+    min_model_num_params = min_model_num_params[::-1]
+    # for row in heatmap_data:
+    plot_lineplot(
+        experiment=experiment, xdata=dataset_sizes, ydata=min_model_num_params
+    )
 
     plt.close("all")
     return
@@ -50,8 +66,6 @@ def plot_heatmap(experiment, data, xlabels, ylabels):
 
 
 def plot_lineplot(experiment, xdata, ydata):
-    # mpl.rcParams["axes.spines.right"] = False
-    # mpl.rcParams["axes.spines.top"] = False
     plt.figure(1)
     plt.xlabel("Dataset Size")
     plt.ylabel("Number of Parameters")
@@ -61,40 +75,3 @@ def plot_lineplot(experiment, xdata, ydata):
         bbox_inches="tight",
     )
     return
-
-
-"""
-def plot(experiment, run, run_data, plot_settings, j):
-    plt.figure(j)
-    plt.plot(
-        list(range(0, len(run_data))),
-        run_data,
-        linewidth=plot_settings["linewidth"],
-        markevery=plot_settings["markevery"],
-        label=plot_settings["label"],
-        marker=plot_settings["marker"],
-    )
-    plt.xlabel(experiment.plot_metrics.x_metric)
-    plt.ylabel(plot_settings["y_metric"])
-    plt.xlim(left=0, right=len(run_data))
-    plt.title(setup_title(experiment, run))
-
-    plt.legend(
-        bbox_to_anchor=(0.5, -0.2),
-        loc="lower center",
-        borderaxespad=0,
-        ncol=plot_settings["ncols"],
-    )
-    plt.savefig(
-        experiment.path
-        + "/plots/"
-        + experiment.dataset.name
-        + "_"
-        + experiment.model_type
-        + "_"
-        + plot_settings["y_metric"]
-        + ".pdf",
-        bbox_inches="tight",
-    )
-    return
-"""

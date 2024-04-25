@@ -28,14 +28,14 @@ class Experiment:
         experiment_id = hu.hash_dict({"experiment": self})
         # print("Experiment ID: ", experiment_id)
         if plot_only == False:
-            print("Run experiment")
+            print("Run Experiment")
             full_dataset = load_dataset("roneneldan/TinyStories", split="train")["text"]
             ### Process data
             for run_num, run in enumerate(self.runs):
+                torch.manual_seed(0)
                 run.vocab_size, run.training_dataset = self.process_data(
                     full_dataset, run
                 )
-                # torch.manual_seed(0)
                 print("-----Run " + str(run_num + 1) + "-----")
                 ### Train model
                 run.model_obj, run.model_num_params = self.create_model(run)
@@ -51,7 +51,7 @@ class Experiment:
         with open(self.path + "/experiments/" + str(experiment_id) + ".pkl", "rb") as f:
             experiment = pickle.load(f)
         f.close()
-        print(experiment)
+        # print(experiment)
         ### Plot results
         print("Plot Experiment")
         plot_experiment(experiment["experiment"])

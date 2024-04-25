@@ -21,11 +21,11 @@ print(device)
 
 embed_size = 256
 sequence_length = 100
-epochs = 3
+epochs = 100
 batch_size = 256
 plot_only = True
-n_vals = [500, 1000]
-m_vals = [128, 256]
+n_vals = [100, 500, 1000]
+m_vals = [128, 256, 512]
 
 runs = []
 # create runs
@@ -35,6 +35,10 @@ for n in n_vals:
         runs.append(run)
 
 ex = Experiment(
-    path=path, batch_size=batch_size, epochs=epochs, device=device, runs=runs
+    path=path,
+    batch_size=batch_size,
+    epochs=epochs,
+    device=device,
+    runs=runs,
 )
 ex.run_experiment(plot_only=plot_only)

@@ -21,7 +21,6 @@ class Experiment:
     batch_size: any
     epochs: int
     device: str = "cuda"
-    ### Lists
     runs: list[Run] = field(default_factory=list)
 
     def run_experiment(self, plot_only):
@@ -57,13 +56,7 @@ class Experiment:
         plot_experiment(experiment["experiment"])
 
     def process_data(self, full_dataset, run):
-        ### Read in data
-        # dataset.save_to_disk(path + "/data/" + "TinyStoriesTrain.txt")
-        # dataset = datasets.load_from_disk(path + "/data/" + "TinyStoriesTrain.txt")
-
         ### Tokenize data
-        # tokenizer = TreebankWordTokenizer()
-        # tokenizer.tokenize()
         datasetTokens = []
         j = 0
         for _, story in enumerate(full_dataset):
@@ -93,8 +86,6 @@ class Experiment:
         model = DecoderOnlyTransformer(
             omega=run.vocab_size,
             d=run.d,
-            num_heads=1,
-            num_decode_layers=1,
             m=run.m,
             tao=run.sequence_length,
             device=self.device,

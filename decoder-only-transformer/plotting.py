@@ -5,44 +5,79 @@ def plot_experiment(experiment):
     dataset_sizes = []
     m_vals = []
     heatmap_data = []
-    training_threshold = 5.4
-    print(experiment.runs)
+    training_threshold = 3.4
+
     for run in experiment.runs:
         if not (run.n in dataset_sizes):
-            dataset_sizes.insert(0, run.n)
+            dataset_sizes.append(run.n)
         if not (run.m in m_vals):
             m_vals.append(run.m)
     i = 0
     min_model_num_params = []
+    min_model_ms = []
     # print(experiment.runs)
-    for _ in dataset_sizes:
+    for dataset_size in dataset_sizes:
         yrow = []
         min_m = 1e8
-        for _ in m_vals:
+        for m in m_vals:
+            print("Run:", i + 1)
+            print("Dataset Size:", dataset_size)
+            print("Hidden Size:", m)
+            print("Actual Dataset Size", experiment.runs[i].n)
+            print("Actual Hidden Size", experiment.runs[i].m)
+            print("Final Training Loss:", experiment.runs[i].training_loss_values[-1])
+            print("Num Params:", experiment.runs[i].model_num_params)
             yrow.append(experiment.runs[i].training_loss_values[-1])
             if (
                 experiment.runs[i].training_loss_values[-1] < training_threshold
                 and experiment.runs[i].m < min_m
             ):
-                min_m = experiment.runs[i].m
+                min_model_ms.append(experiment.runs[i].m)
                 min_model_num_params.append(experiment.runs[i].model_num_params)
+                min_m = experiment.runs[i].m
             i = i + 1
-        heatmap_data.insert(0, yrow)
+        heatmap_data.append(yrow)
     print("Heatmap Data")
     print(heatmap_data)
+    print("Min Model Params")
+    print(min_model_num_params)
+    print("Min Model m's")
+    print(min_model_ms)
     print("M vals")
     print(m_vals)
     print("Dataset Sizes")
     print(dataset_sizes)
+
+    dataset_sizes_rev = dataset_sizes[::-1]  # reverses order of list
+    heatmap_data_rev = heatmap_data[::-1]
+
+    print("Heatmap Data Rev")
+    print(heatmap_data_rev)
+    print("Dataset Sizes Rev")
+    print(dataset_sizes_rev)
+
+    plt.figure(0)
     plot_heatmap(
-        experiment=experiment, data=heatmap_data, xlabels=m_vals, ylabels=dataset_sizes
+        experiment=experiment,
+        data=heatmap_data_rev,
+        xlabels=m_vals,
+        ylabels=dataset_sizes_rev,
     )
 
-    dataset_sizes = dataset_sizes[::-1]  # reverses order of list
-    min_model_num_params = min_model_num_params[::-1]
-    # for row in heatmap_data:
+    plt.figure(1)
     plot_lineplot(
-        experiment=experiment, xdata=dataset_sizes, ydata=min_model_num_params
+        experiment=experiment,
+        xdata=dataset_sizes,
+        ydata=min_model_num_params,
+        ymetric="Number of Parameters",
+    )
+
+    plt.figure(2)
+    plot_lineplot(
+        experiment=experiment,
+        xdata=dataset_sizes,
+        ydata=min_model_ms,
+        ymetric="Hidden Dimension",
     )
 
     plt.close("all")
@@ -50,8 +85,6 @@ def plot_experiment(experiment):
 
 
 def plot_heatmap(experiment, data, xlabels, ylabels):
-    plt.figure(0)
-
     plt.imshow(data, cmap="bone", interpolation="nearest")
     plt.xlabel("Hidden Dimension Size")
     plt.ylabel("Dataset Size")
@@ -65,13 +98,13 @@ def plot_heatmap(experiment, data, xlabels, ylabels):
     return
 
 
-def plot_lineplot(experiment, xdata, ydata):
-    plt.figure(1)
+def plot_lineplot(experiment, xdata, ydata, ymetric):
     plt.xlabel("Dataset Size")
-    plt.ylabel("Number of Parameters")
+    plt.ylabel(ymetric)
+    plt.xticks(ticks=xdata)
     plt.plot(xdata, ydata, linewidth=2, markevery=1, marker="o")
     plt.savefig(
-        experiment.path + "/plots/" + "lineplot" + ".pdf",
+        experiment.path + "/plots/" + "lineplot_" + ymetric + ".pdf",
         bbox_inches="tight",
     )
     return

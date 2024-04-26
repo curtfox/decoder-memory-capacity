@@ -30,6 +30,7 @@ class Experiment:
             print("Run Experiment")
             full_dataset = load_dataset("roneneldan/TinyStories", split="train")["text"]
             ### Process data
+            emp_loss_dict = {}
             for run_num, run in enumerate(self.runs):
                 torch.manual_seed(0)
                 run.vocab_size, run.training_dataset = self.process_data(
@@ -38,9 +39,15 @@ class Experiment:
                 print("-----Run " + str(run_num + 1) + "-----")
                 ### Train model
                 run.model_obj, run.model_num_params = self.create_model(run)
+                print("---Compute Empirical Loss")
+                if not (str(run.n) in emp_loss_dict):
+                    emp_loss = self.compute_empirical_loss(run)
+                    emp_loss_dict[str(run.n)] = emp_loss
+                    run.emp_loss = emp_loss
+                else:
+                    run.emp_loss = emp_loss_dict[str(run.n)]
                 print("---Training---")
                 run.training_loss_values = self.train(run)
-
             with open(
                 self.path + "/experiments/" + str(experiment_id) + ".pkl", "wb"
             ) as f:
@@ -52,8 +59,10 @@ class Experiment:
         f.close()
         # print(experiment)
         ### Plot results
-        print("Plot Experiment")
-        plot_experiment(experiment["experiment"])
+        print("Emperical Loss Dict")
+        print(emp_loss_dict)
+        # print("Plot Experiment")
+        # plot_experiment(experiment["experiment"])
 
     def process_data(self, full_dataset, run):
         ### Tokenize data
@@ -79,6 +88,9 @@ class Experiment:
                 storyID.append(vocab.token2id[word])
             datasetIDs.append(storyID)
 
+        vocab_size = 10
+        datasetIDs = torch.randint(1, vocab_size, (5, run.sequence_length))
+
         training_dataset = CustomTextDataset(sequence=torch.tensor(datasetIDs))
         return vocab_size, training_dataset
 
@@ -94,8 +106,52 @@ class Experiment:
         model_num_params = sum(p.numel() for p in model.parameters())
         return model, model_num_params
 
+    def compute_empirical_loss(self, run: Run):
+
+        for whole_dataset in torch_data.DataLoader(
+            run.training_dataset, batch_size=run.n, shuffle=False
+        ):
+            training_dataset = whole_dataset
+
+        num_data_points = training_dataset.size(0)
+        vocab_size = run.vocab_size
+        seq_length = run.sequence_length
+
+        emp_loss = 0
+        # for each length (1 to seq_length - 1)
+        for t in range(1, seq_length):
+            unique_rows, inverse, counts = torch.unique(
+                training_dataset[:, 0:t],
+                sorted=False,
+                return_inverse=True,
+                return_counts=True,
+                dim=0,
+            )
+            num_unique_rows = unique_rows.size(0)
+
+            # for each unique row
+            for i in range(num_unique_rows):
+                # for each token in vocab
+                for gamma in range(vocab_size):
+                    pi_hat = 0
+                    # for each data point
+                    for j in range(num_data_points):
+                        # check if data sequence (beginning) k corresponds to unique sequence beginning i
+                        # AND
+                        # check if next token in data sequence (beginning) k equals token gamma
+                        if inverse[j] == i and training_dataset[j, t] == gamma:
+                            pi_hat = pi_hat + 1
+
+                    pi_hat = pi_hat / counts[i]
+                    # check if pi_hat == 0
+                    if pi_hat != 0:
+                        emp_loss = emp_loss + -counts[i] * pi_hat * torch.log(pi_hat)
+
+        print(emp_loss.item())
+        return emp_loss.item()
+
     def train(self, run):
-        criterion = nn.CrossEntropyLoss(ignore_index=-1)
+        criterion = nn.CrossEntropyLoss(reduction="sum")
         optimizer = optim.Adam(
             run.model_obj.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9
         )
@@ -106,14 +162,12 @@ class Experiment:
         )
         training_loss_vals = []
         for epoch in range(self.epochs):
-            print(f"Epoch: {epoch+1}")
+            # print(f"Epoch: {epoch+1}")
             for _, sequence_batch in enumerate(trainloader):
                 # print(f"Batch: {i+1}")
                 sequence_batch = sequence_batch.to(self.device)
                 optimizer.zero_grad()
-                # print("Input Data Size:", sequence_batch.size())
                 output = run.model_obj(sequence_batch[:, :-1])  # sequence_batch[:, :-1]
-                # print("Output Size:", output.contiguous().view(-1, vocab_size).size())
                 loss = criterion(
                     output.contiguous().view(-1, run.vocab_size),
                     sequence_batch[:, 1:]
@@ -124,12 +178,14 @@ class Experiment:
                 optimizer.step()
             full_loss = self.compute_full_training_loss(run)
             training_loss_vals.append(full_loss)
-            print(f"Epoch: {epoch+1}, Loss: {full_loss}")
+            # print(f"Epoch: {epoch+1}, Loss: {full_loss}")
 
+        print(f"Final Epoch Loss: {full_loss}")
+        print(f"Empirical Loss: {run.emp_loss}")
         return training_loss_vals
 
     def compute_full_training_loss(self, run):
-        criterion = nn.CrossEntropyLoss(ignore_index=-1)
+        criterion = nn.CrossEntropyLoss(reduction="sum")
 
         full_loss = 0
         for sequence_batch in torch_data.DataLoader(

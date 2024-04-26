@@ -12,3 +12,4 @@ class Run:
     model_obj: any = None
     model_num_params: int = 0
     training_loss_values: any = field(default_factory=list)
+    emp_loss: float = 0.0

@@ -48,7 +48,8 @@ def plot_experiment(experiment):
     print("Dataset Sizes")
     print(dataset_sizes)
 
-    dataset_sizes_rev = dataset_sizes[::-1]  # reverses order of list
+    # Reverses order of lists
+    dataset_sizes_rev = dataset_sizes[::-1]
     heatmap_data_rev = heatmap_data[::-1]
 
     print("Heatmap Data Rev")

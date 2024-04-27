@@ -17,13 +17,14 @@ else:
 print(device)
 
 # Set parameters
-embed_size = 32
+# d <= n, tao*d <= n*omega
+embed_size = 128
 sequence_length = 10
-epochs = 1000
+epochs = 100000
 batch_size = 256
 plot_only = False
 n_vals = [100]
-m_vals = [8]
+m_vals = [10]
 
 runs = []
 # Create runs

@@ -39,13 +39,14 @@ class Experiment:
                 print("-----Run " + str(run_num + 1) + "-----")
                 ### Train model
                 run.model_obj, run.model_num_params = self.create_model(run)
-                print("---Compute Empirical Loss")
+                print("---Compute Empirical Loss---")
                 if not (str(run.n) in emp_loss_dict):
                     emp_loss = self.compute_empirical_loss(run)
                     emp_loss_dict[str(run.n)] = emp_loss
                     run.emp_loss = emp_loss
                 else:
                     run.emp_loss = emp_loss_dict[str(run.n)]
+
                 print("---Training---")
                 run.training_loss_values = self.train(run)
             with open(
@@ -88,8 +89,8 @@ class Experiment:
                 storyID.append(vocab.token2id[word])
             datasetIDs.append(storyID)
 
-        vocab_size = 10
-        datasetIDs = torch.randint(1, vocab_size, (5, run.sequence_length))
+        # vocab_size = 10
+        # datasetIDs = torch.randint(1, vocab_size, (5, run.sequence_length))
 
         training_dataset = CustomTextDataset(sequence=torch.tensor(datasetIDs))
         return vocab_size, training_dataset
@@ -115,9 +116,11 @@ class Experiment:
 
         num_data_points = training_dataset.size(0)
         vocab_size = run.vocab_size
+        print("Vocab Size:", run.vocab_size)
         seq_length = run.sequence_length
 
         emp_loss = 0
+        unique_beginnings = 0
         # for each length (1 to seq_length - 1)
         for t in range(1, seq_length):
             unique_rows, inverse, counts = torch.unique(
@@ -128,6 +131,7 @@ class Experiment:
                 dim=0,
             )
             num_unique_rows = unique_rows.size(0)
+            unique_beginnings = unique_beginnings + num_unique_rows
 
             # for each unique row
             for i in range(num_unique_rows):
@@ -147,14 +151,16 @@ class Experiment:
                     if pi_hat != 0:
                         emp_loss = emp_loss + -counts[i] * pi_hat * torch.log(pi_hat)
 
-        print(emp_loss.item())
+        print("Unique Beginnings:", unique_beginnings)
+        # print(emp_loss.item())
         return emp_loss.item()
 
     def train(self, run):
         criterion = nn.CrossEntropyLoss(reduction="sum")
         optimizer = optim.Adam(
-            run.model_obj.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9
+            run.model_obj.parameters(), lr=0.001, betas=(0.9, 0.98), eps=1e-9
         )
+        # optimizer = optim.SGD(run.model_obj.parameters(), lr=0.1)
 
         ### Run Training loop
         trainloader = torch_data.DataLoader(
@@ -162,7 +168,9 @@ class Experiment:
         )
         training_loss_vals = []
         for epoch in range(self.epochs):
-            # print(f"Epoch: {epoch+1}")
+            print(f"Epoch: {epoch+1}")
+            if epoch == 2000:
+                optimizer.param_groups[0]["lr"] = 0.00001
             for _, sequence_batch in enumerate(trainloader):
                 # print(f"Batch: {i+1}")
                 sequence_batch = sequence_batch.to(self.device)
@@ -178,10 +186,12 @@ class Experiment:
                 optimizer.step()
             full_loss = self.compute_full_training_loss(run)
             training_loss_vals.append(full_loss)
-            # print(f"Epoch: {epoch+1}, Loss: {full_loss}")
+            print(f"Epoch: {epoch+1}, Loss: {full_loss}")
 
         print(f"Final Epoch Loss: {full_loss}")
         print(f"Empirical Loss: {run.emp_loss}")
+        print(f"Absolute Difference: {full_loss - run.emp_loss}")
+        print(f"Relative Difference: {(full_loss - run.emp_loss)/run.emp_loss}")
         return training_loss_vals
 
     def compute_full_training_loss(self, run):

@@ -25,7 +25,6 @@ for t in range(1, seq_length):
 
     # print("Begin Loop")
     # for each unique row
-
     for i in range(num_unique_rows):
         print("---Unique row---:", i)
         # for each token in vocab
@@ -35,9 +34,9 @@ for t in range(1, seq_length):
             # for each data point
             for j in range(num_data_points):
                 print("-Data Point-:", j)
-                # check if data sequence (beginning) k corresponds to unique sequence beginning i
+                # check if data sequence (beginning) j corresponds to unique sequence beginning i
                 # AND
-                # check if next token in data sequence (beginning) k equals token gamma
+                # check if next token in data sequence (beginning) j equals token gamma
                 if inverse[j] == i and data[j, t] == gamma:
                     print("Add to count")
                     pi_hat = pi_hat + 1

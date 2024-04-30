@@ -17,14 +17,14 @@ else:
 print(device)
 
 # Set parameters
-# d <= n, tao*d <= n*omega
-embed_size = 128
+# embed_size <= n, sequence_length*embed_size <= n*vocab_size
+embed_size = 32
 sequence_length = 10
-epochs = 100000
-batch_size = 256
+epochs = 10000
+batch_size = 64
 plot_only = False
-n_vals = [100]
-m_vals = [10]
+n_vals = [100]  # , 250, 500, 1000, 1250, 1500, 1750, 2000]
+m_vals = [4, 512, 1024]
 
 runs = []
 # Create runs
@@ -35,10 +35,9 @@ for n in n_vals:
 
 # Run experiment
 ex = Experiment(
-    path=path,
     batch_size=batch_size,
     epochs=epochs,
     device=device,
     runs=runs,
 )
-ex.run_experiment(plot_only=plot_only)
+ex.run_experiment(plot_only=plot_only, path=path)

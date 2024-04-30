@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 
 
-def plot_experiment(experiment):
+def plot_experiment(experiment, path):
     dataset_sizes = []
     m_vals = []
     heatmap_data = []
-    training_threshold = 3.4
+    training_threshold = 1
 
     for run in experiment.runs:
         if not (run.n in dataset_sizes):
@@ -27,9 +27,14 @@ def plot_experiment(experiment):
             print("Actual Hidden Size", experiment.runs[i].m)
             print("Final Training Loss:", experiment.runs[i].training_loss_values[-1])
             print("Num Params:", experiment.runs[i].model_num_params)
-            yrow.append(experiment.runs[i].training_loss_values[-1])
+            yrow.append(
+                experiment.runs[i].training_loss_values[-1]
+                - experiment.runs[i].emp_loss
+            )
             if (
-                experiment.runs[i].training_loss_values[-1] < training_threshold
+                experiment.runs[i].training_loss_values[-1]
+                - experiment.runs[i].emp_loss
+                < training_threshold
                 and experiment.runs[i].m < min_m
             ):
                 min_model_ms.append(experiment.runs[i].m)
@@ -59,7 +64,7 @@ def plot_experiment(experiment):
 
     plt.figure(0)
     plot_heatmap(
-        experiment=experiment,
+        path=path,
         data=heatmap_data_rev,
         xlabels=m_vals,
         ylabels=dataset_sizes_rev,
@@ -67,7 +72,7 @@ def plot_experiment(experiment):
 
     plt.figure(1)
     plot_lineplot(
-        experiment=experiment,
+        path=path,
         xdata=dataset_sizes,
         ydata=min_model_num_params,
         ymetric="Number of Parameters",
@@ -75,7 +80,7 @@ def plot_experiment(experiment):
 
     plt.figure(2)
     plot_lineplot(
-        experiment=experiment,
+        path=path,
         xdata=dataset_sizes,
         ydata=min_model_ms,
         ymetric="Hidden Dimension",
@@ -85,7 +90,7 @@ def plot_experiment(experiment):
     return
 
 
-def plot_heatmap(experiment, data, xlabels, ylabels):
+def plot_heatmap(path, data, xlabels, ylabels):
     plt.imshow(data, cmap="bone", interpolation="nearest")
     plt.xlabel("Hidden Dimension Size")
     plt.ylabel("Dataset Size")
@@ -93,19 +98,19 @@ def plot_heatmap(experiment, data, xlabels, ylabels):
     plt.yticks(range(len(ylabels)), ylabels)
     plt.colorbar()
     plt.savefig(
-        experiment.path + "/plots/" + "heatmap" + ".pdf",
+        path + "/plots/" + "heatmap" + ".pdf",
         bbox_inches="tight",
     )
     return
 
 
-def plot_lineplot(experiment, xdata, ydata, ymetric):
+def plot_lineplot(path, xdata, ydata, ymetric):
     plt.xlabel("Dataset Size")
     plt.ylabel(ymetric)
     plt.xticks(ticks=xdata)
     plt.plot(xdata, ydata, linewidth=2, markevery=1, marker="o")
     plt.savefig(
-        experiment.path + "/plots/" + "lineplot_" + ymetric + ".pdf",
+        path + "/plots/" + "lineplot_" + ymetric + ".pdf",
         bbox_inches="tight",
     )
     return

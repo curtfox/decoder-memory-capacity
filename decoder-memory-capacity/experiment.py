@@ -17,13 +17,12 @@ from datasets import load_dataset
 
 @dataclass
 class Experiment:
-    path: str
     batch_size: any
     epochs: int
     device: str = "cuda"
     runs: list[Run] = field(default_factory=list)
 
-    def run_experiment(self, plot_only):
+    def run_experiment(self, plot_only, path):
         experiment_id = hu.hash_dict({"experiment": self})
         # print("Experiment ID: ", experiment_id)
         if plot_only == False:
@@ -39,9 +38,10 @@ class Experiment:
                 print("-----Run " + str(run_num + 1) + "-----")
                 ### Train model
                 run.model_obj, run.model_num_params = self.create_model(run)
-                print("---Compute Empirical Loss---")
                 if not (str(run.n) in emp_loss_dict):
+                    print("---Compute Empirical Loss---")
                     emp_loss = self.compute_empirical_loss(run)
+                    print("Empirical Loss:", emp_loss)
                     emp_loss_dict[str(run.n)] = emp_loss
                     run.emp_loss = emp_loss
                 else:
@@ -49,21 +49,19 @@ class Experiment:
 
                 print("---Training---")
                 run.training_loss_values = self.train(run)
-            with open(
-                self.path + "/experiments/" + str(experiment_id) + ".pkl", "wb"
-            ) as f:
+            with open(path + "/experiments/" + str(experiment_id) + ".pkl", "wb") as f:
                 pickle.dump({"experiment": self}, f)
             f.close()
 
-        with open(self.path + "/experiments/" + str(experiment_id) + ".pkl", "rb") as f:
+        with open(path + "/experiments/" + str(experiment_id) + ".pkl", "rb") as f:
             experiment = pickle.load(f)
         f.close()
         # print(experiment)
         ### Plot results
-        print("Emperical Loss Dict")
+        print("Empirical Loss Dict")
         print(emp_loss_dict)
-        # print("Plot Experiment")
-        # plot_experiment(experiment["experiment"])
+        print("Plot Experiment")
+        plot_experiment(experiment["experiment"], path)
 
     def process_data(self, full_dataset, run):
         ### Tokenize data
@@ -116,7 +114,7 @@ class Experiment:
 
         num_data_points = training_dataset.size(0)
         vocab_size = run.vocab_size
-        print("Vocab Size:", run.vocab_size)
+        print("Vocab Size:", vocab_size)
         seq_length = run.sequence_length
 
         emp_loss = 0
@@ -140,9 +138,9 @@ class Experiment:
                     pi_hat = 0
                     # for each data point
                     for j in range(num_data_points):
-                        # check if data sequence (beginning) k corresponds to unique sequence beginning i
+                        # check if data sequence (beginning) j corresponds to unique sequence beginning i
                         # AND
-                        # check if next token in data sequence (beginning) k equals token gamma
+                        # check if next token in data sequence (beginning) j equals token gamma
                         if inverse[j] == i and training_dataset[j, t] == gamma:
                             pi_hat = pi_hat + 1
 
@@ -157,25 +155,22 @@ class Experiment:
 
     def train(self, run):
         criterion = nn.CrossEntropyLoss(reduction="sum")
-        optimizer = optim.Adam(
-            run.model_obj.parameters(), lr=0.001, betas=(0.9, 0.98), eps=1e-9
-        )
-        # optimizer = optim.SGD(run.model_obj.parameters(), lr=0.1)
+
+        optimizer = optim.Adam(run.model_obj.parameters(), lr=0.001)
+        # optimizer = optim.SGD(run.model_obj.parameters(), lr=0.0001)
 
         ### Run Training loop
         trainloader = torch_data.DataLoader(
-            run.training_dataset, batch_size=self.batch_size, shuffle=True
+            run.training_dataset, batch_size=run.n, shuffle=True
         )
         training_loss_vals = []
         for epoch in range(self.epochs):
-            print(f"Epoch: {epoch+1}")
-            if epoch == 2000:
-                optimizer.param_groups[0]["lr"] = 0.00001
             for _, sequence_batch in enumerate(trainloader):
-                # print(f"Batch: {i+1}")
                 sequence_batch = sequence_batch.to(self.device)
                 optimizer.zero_grad()
                 output = run.model_obj(sequence_batch[:, :-1])  # sequence_batch[:, :-1]
+                # print("Output Size: ", output.contiguous().view(-1, run.vocab_size))
+                # sprint("Target Size: ", sequence_batch[:, 1:].contiguous().view(-1))
                 loss = criterion(
                     output.contiguous().view(-1, run.vocab_size),
                     sequence_batch[:, 1:]
@@ -186,7 +181,14 @@ class Experiment:
                 optimizer.step()
             full_loss = self.compute_full_training_loss(run)
             training_loss_vals.append(full_loss)
-            print(f"Epoch: {epoch+1}, Loss: {full_loss}")
+            """
+            if (epoch + 1) == 1000:
+                optimizer.param_groups[0]["lr"] = 0.0001
+            elif (epoch + 1) == 2000:
+                optimizer.param_groups[0]["lr"] = 0.00001            
+            """
+            if (epoch + 1) % 100 == 0:
+                print(f"Epoch: {epoch+1}, Loss: {full_loss}")
 
         print(f"Final Epoch Loss: {full_loss}")
         print(f"Empirical Loss: {run.emp_loss}")
@@ -200,7 +202,7 @@ class Experiment:
         full_loss = 0
         for sequence_batch in torch_data.DataLoader(
             dataset=run.training_dataset,
-            batch_size=self.batch_size,
+            batch_size=run.n,
             shuffle=False,
         ):
             sequence_batch = sequence_batch.to(self.device)
@@ -209,7 +211,7 @@ class Experiment:
                 output.contiguous().view(-1, run.vocab_size),
                 sequence_batch[:, 1:].contiguous().view(-1),
             )
-            full_loss = full_loss + loss * len(sequence_batch)
+            full_loss = loss  # + loss  # * len(sequence_batch)
 
-        full_loss = full_loss / run.n
+        full_loss = full_loss  # / run.n
         return full_loss.item()

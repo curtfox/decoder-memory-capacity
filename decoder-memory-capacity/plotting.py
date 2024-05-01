@@ -5,7 +5,7 @@ def plot_experiment(experiment, path):
     dataset_sizes = []
     m_vals = []
     heatmap_data = []
-    training_threshold = 1
+    training_threshold = 0.2
 
     for run in experiment.runs:
         if not (run.n in dataset_sizes):

@@ -18,13 +18,15 @@ print(device)
 
 # Set parameters
 # embed_size <= n, sequence_length*embed_size <= n*vocab_size
-embed_size = 32
+embed_size = 16
 sequence_length = 10
-epochs = 10000
-batch_size = 64
+epochs = 50000
+batch_size = "full"
 plot_only = False
-n_vals = [100]  # , 250, 500, 1000, 1250, 1500, 1750, 2000]
-m_vals = [4, 512, 1024]
+# n_vals = [100, 200, 300, 400, 500]
+n_vals = [500]
+m_vals = [32, 64, 128, 256, 512, 1024, 2048, 4096]
+# m_vals = [4096]
 
 runs = []
 # Create runs
@@ -37,7 +39,6 @@ for n in n_vals:
 ex = Experiment(
     batch_size=batch_size,
     epochs=epochs,
-    device=device,
     runs=runs,
 )
-ex.run_experiment(plot_only=plot_only, path=path)
+ex.run_experiment(plot_only=plot_only, path=path, device=device)

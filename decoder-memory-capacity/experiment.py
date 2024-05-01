@@ -19,17 +19,22 @@ from datasets import load_dataset
 class Experiment:
     batch_size: any
     epochs: int
-    device: str = "cuda"
     runs: list[Run] = field(default_factory=list)
 
-    def run_experiment(self, plot_only, path):
+    def run_experiment(self, plot_only, path, device):
         experiment_id = hu.hash_dict({"experiment": self})
         # print("Experiment ID: ", experiment_id)
         if plot_only == False:
             print("Run Experiment")
             full_dataset = load_dataset("roneneldan/TinyStories", split="train")["text"]
             ### Process data
-            emp_loss_dict = {}
+            emp_loss_dict = {
+                "100": 351.5614624,
+                "200": 754.4559326,
+                "300": 1172.5532227,
+                "400": 1629.6152344,
+                "500": 2131.4968262,
+            }
             for run_num, run in enumerate(self.runs):
                 torch.manual_seed(0)
                 run.vocab_size, run.training_dataset = self.process_data(
@@ -37,29 +42,30 @@ class Experiment:
                 )
                 print("-----Run " + str(run_num + 1) + "-----")
                 ### Train model
-                run.model_obj, run.model_num_params = self.create_model(run)
+                run.model_obj, run.model_num_params = self.create_model(run, device)
                 if not (str(run.n) in emp_loss_dict):
                     print("---Compute Empirical Loss---")
-                    emp_loss = self.compute_empirical_loss(run)
-                    print("Empirical Loss:", emp_loss)
-                    emp_loss_dict[str(run.n)] = emp_loss
-                    run.emp_loss = emp_loss
+                    emp_loss_dict[str(run.n)] = self.compute_empirical_loss(run)
+                    run.emp_loss = emp_loss_dict[str(run.n)]
                 else:
                     run.emp_loss = emp_loss_dict[str(run.n)]
+                print("Empirical Loss:", emp_loss_dict[str(run.n)])
 
                 print("---Training---")
-                run.training_loss_values = self.train(run)
+                run.training_loss_values = self.train(run, device)
             with open(path + "/experiments/" + str(experiment_id) + ".pkl", "wb") as f:
                 pickle.dump({"experiment": self}, f)
             f.close()
-
+            print("Empirical Loss Dict")
+            print(emp_loss_dict)
         with open(path + "/experiments/" + str(experiment_id) + ".pkl", "rb") as f:
             experiment = pickle.load(f)
         f.close()
+        for run in experiment["experiment"].runs:
+            print(run.emp_loss)
         # print(experiment)
         ### Plot results
-        print("Empirical Loss Dict")
-        print(emp_loss_dict)
+
         print("Plot Experiment")
         plot_experiment(experiment["experiment"], path)
 
@@ -93,19 +99,19 @@ class Experiment:
         training_dataset = CustomTextDataset(sequence=torch.tensor(datasetIDs))
         return vocab_size, training_dataset
 
-    def create_model(self, run):
+    def create_model(self, run, device):
         model = DecoderOnlyTransformer(
             omega=run.vocab_size,
             d=run.d,
             m=run.m,
             tao=run.sequence_length,
-            device=self.device,
-        ).to(self.device)
+            device=device,
+        ).to(device)
         summary(model)
         model_num_params = sum(p.numel() for p in model.parameters())
         return model, model_num_params
 
-    def compute_empirical_loss(self, run: Run):
+    def compute_empirical_loss(self, run):
 
         for whole_dataset in torch_data.DataLoader(
             run.training_dataset, batch_size=run.n, shuffle=False
@@ -153,20 +159,28 @@ class Experiment:
         # print(emp_loss.item())
         return emp_loss.item()
 
-    def train(self, run):
+    def train(self, run, device):
+        if self.batch_size == "full":
+            batch_size = run.n
+        else:
+            batch_size = self.batch_size
+
         criterion = nn.CrossEntropyLoss(reduction="sum")
 
-        optimizer = optim.Adam(run.model_obj.parameters(), lr=0.001)
-        # optimizer = optim.SGD(run.model_obj.parameters(), lr=0.0001)
+        optimizer = optim.Adam(run.model_obj.parameters(), lr=0.0001)
+        # optimizer = optim.SGD(run.model_obj.parameters(), lr=0.01)
 
         ### Run Training loop
         trainloader = torch_data.DataLoader(
-            run.training_dataset, batch_size=run.n, shuffle=True
+            run.training_dataset, batch_size=batch_size, shuffle=False
         )
         training_loss_vals = []
+        loss_sum = 0
+        loss_sum_recent = 0
+        epoch_prev = 0
         for epoch in range(self.epochs):
             for _, sequence_batch in enumerate(trainloader):
-                sequence_batch = sequence_batch.to(self.device)
+                sequence_batch = sequence_batch.to(device)
                 optimizer.zero_grad()
                 output = run.model_obj(sequence_batch[:, :-1])  # sequence_batch[:, :-1]
                 # print("Output Size: ", output.contiguous().view(-1, run.vocab_size))
@@ -179,14 +193,16 @@ class Experiment:
                 )
                 loss.backward()
                 optimizer.step()
-            full_loss = self.compute_full_training_loss(run)
+            full_loss = compute_full_training_loss(run, device, batch_size)
+            loss_sum += full_loss
             training_loss_vals.append(full_loss)
-            """
-            if (epoch + 1) == 1000:
-                optimizer.param_groups[0]["lr"] = 0.0001
-            elif (epoch + 1) == 2000:
-                optimizer.param_groups[0]["lr"] = 0.00001            
-            """
+            # if epoch > 1000 and (loss_sum / epoch) < full_loss:
+            #     optimizer.param_groups[0]["lr"] *= 0.1
+            #     print("Step size decreased to:", optimizer.param_groups[0]["lr"])
+            if (epoch + 1) == int(self.epochs * 0.5):
+                optimizer.param_groups[0]["lr"] = 0.00001
+            # if (epoch + 1) == int(self.epochs * 0.75):
+            #     optimizer.param_groups[0]["lr"] = 0.00001
             if (epoch + 1) % 100 == 0:
                 print(f"Epoch: {epoch+1}, Loss: {full_loss}")
 
@@ -196,22 +212,23 @@ class Experiment:
         print(f"Relative Difference: {(full_loss - run.emp_loss)/run.emp_loss}")
         return training_loss_vals
 
-    def compute_full_training_loss(self, run):
-        criterion = nn.CrossEntropyLoss(reduction="sum")
 
-        full_loss = 0
-        for sequence_batch in torch_data.DataLoader(
-            dataset=run.training_dataset,
-            batch_size=run.n,
-            shuffle=False,
-        ):
-            sequence_batch = sequence_batch.to(self.device)
-            output = run.model_obj(sequence_batch[:, :-1])
-            loss = criterion(
-                output.contiguous().view(-1, run.vocab_size),
-                sequence_batch[:, 1:].contiguous().view(-1),
-            )
-            full_loss = loss  # + loss  # * len(sequence_batch)
+def compute_full_training_loss(run, device, batch_size):
+    criterion = nn.CrossEntropyLoss(reduction="sum")
 
-        full_loss = full_loss  # / run.n
-        return full_loss.item()
+    full_loss = 0
+    for sequence_batch in torch_data.DataLoader(
+        dataset=run.training_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+    ):
+        sequence_batch = sequence_batch.to(device)
+        output = run.model_obj(sequence_batch[:, :-1])
+        loss = criterion(
+            output.contiguous().view(-1, run.vocab_size),
+            sequence_batch[:, 1:].contiguous().view(-1),
+        )
+        full_loss += loss
+
+    full_loss = full_loss  # / run.n
+    return full_loss.item()

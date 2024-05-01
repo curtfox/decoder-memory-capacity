@@ -21,11 +21,7 @@ class DecoderOnlyTransformer(nn.Module):
         embedded = self.pos_encode(self.embed(x))
         dec_in = embedded
         dec_out = self.decoder_block(dec_in)
-        # print("Decoder Block Output")
-        # print(dec_out.size())
         out = self.linear(dec_out)
-        # print("Transformer Output")
-        # print(out.size())
         return out
 
 
@@ -47,7 +43,7 @@ class PositionWiseFeedForward(nn.Module):
         super(PositionWiseFeedForward, self).__init__()
         self.layer1 = nn.Linear(embed_size, m)
         # self.layer2 = nn.Linear(dim_ff, embed_size)
-        self.act = nn.GELU()  ### may need to edit this to use different activation
+        self.act = nn.GELU()
 
     def forward(self, x):
         out = self.act(self.layer1(x))
@@ -103,6 +99,4 @@ class Attention(nn.Module):
         V = self.W_v(V)
         atten_output = self.scaled_dot_product_attention(Q, K, V)
         output = self.W_o(atten_output)
-        # print("Attention Size Output")
-        # print(output.size())
         return output

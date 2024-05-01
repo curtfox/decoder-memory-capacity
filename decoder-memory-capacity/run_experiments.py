@@ -8,6 +8,7 @@ from run import Run
 
 # Get path
 path = os.path.dirname(os.getcwd())
+print(path)
 
 # Set device
 if torch.cuda.is_available():
@@ -20,13 +21,13 @@ print(device)
 # embed_size <= n, sequence_length*embed_size <= n*vocab_size
 embed_size = 16
 sequence_length = 10
-epochs = 50000
+epochs = 10000
 batch_size = "full"
 plot_only = False
-# n_vals = [100, 200, 300, 400, 500]
-n_vals = [500]
+n_vals = [100, 200, 300, 400, 500]
+# n_vals = [100]
 m_vals = [32, 64, 128, 256, 512, 1024, 2048, 4096]
-# m_vals = [4096]
+# m_vals = [32]
 
 runs = []
 # Create runs

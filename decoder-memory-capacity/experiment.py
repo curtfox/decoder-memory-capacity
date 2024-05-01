@@ -13,6 +13,7 @@ import torch.optim as optim
 import torch.utils.data as torch_data
 from plotting import *
 from datasets import load_dataset
+import os
 
 
 @dataclass
@@ -53,13 +54,20 @@ class Experiment:
 
                 print("---Training---")
                 run.training_loss_values = self.train(run, device)
-            with open(path + "/experiments/" + str(experiment_id) + ".pkl", "wb") as f:
+                run.model_obj = None  # to save storage
+            with open(
+                os.path.join(path, "experiments", str(experiment_id) + ".pkl"),
+                "wb",
+            ) as f:
                 pickle.dump({"experiment": self}, f)
             f.close()
             print("Empirical Loss Dict")
             print(emp_loss_dict)
-        with open(path + "/experiments/" + str(experiment_id) + ".pkl", "rb") as f:
-            experiment = pickle.load(f)
+        with open(
+            os.path.join(path, "experiments", str(experiment_id) + ".pkl"), "rb"
+        ) as f:
+            experiment = torch.load(f, map_location=torch.device("cpu"))
+            # experiment = pickle.load(f)
         f.close()
         for run in experiment["experiment"].runs:
             print(run.emp_loss)

@@ -1,11 +1,12 @@
 import matplotlib.pyplot as plt
+import os
 
 
 def plot_experiment(experiment, path):
     dataset_sizes = []
     m_vals = []
     heatmap_data = []
-    training_threshold = 0.2
+    training_threshold = 10000
 
     for run in experiment.runs:
         if not (run.n in dataset_sizes):
@@ -98,7 +99,7 @@ def plot_heatmap(path, data, xlabels, ylabels):
     plt.yticks(range(len(ylabels)), ylabels)
     plt.colorbar()
     plt.savefig(
-        path + "/plots/" + "heatmap" + ".pdf",
+        os.path.join(path, "plots", "heatmap.pdf"),
         bbox_inches="tight",
     )
     return
@@ -110,7 +111,7 @@ def plot_lineplot(path, xdata, ydata, ymetric):
     plt.xticks(ticks=xdata)
     plt.plot(xdata, ydata, linewidth=2, markevery=1, marker="o")
     plt.savefig(
-        path + "/plots/" + "lineplot_" + ymetric + ".pdf",
+        os.path.join(path, "plots", "lineplot_" + ymetric + ".pdf"),
         bbox_inches="tight",
     )
     return

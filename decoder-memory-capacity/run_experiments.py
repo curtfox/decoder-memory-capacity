@@ -10,6 +10,11 @@ from run import Run
 path = os.path.dirname(os.getcwd())
 print(path)
 
+if not os.path.exists(os.path.join(path, "experiments")):
+    os.makedirs(os.path.join(path, "experiments"))
+if not os.path.exists(os.path.join(path, "plots")):
+    os.makedirs(os.path.join(path, "plots"))
+
 # Set device
 if torch.cuda.is_available():
     device = "cuda"

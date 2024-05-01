@@ -54,7 +54,6 @@ class Experiment:
 
                 print("---Training---")
                 run.training_loss_values = self.train(run, device)
-                run.model_obj = None  # to save storage
             with open(
                 os.path.join(path, "experiments", str(experiment_id) + ".pkl"),
                 "wb",
@@ -66,8 +65,7 @@ class Experiment:
         with open(
             os.path.join(path, "experiments", str(experiment_id) + ".pkl"), "rb"
         ) as f:
-            experiment = torch.load(f, map_location=torch.device("cpu"))
-            # experiment = pickle.load(f)
+            experiment = pickle.load(f)
         f.close()
         for run in experiment["experiment"].runs:
             print(run.emp_loss)

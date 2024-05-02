@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from run import Run
 from haven import haven_utils as hu
 import pickle
-from nltk.tokenize import wordpunct_tokenize, TreebankWordTokenizer
+from nltk.tokenize import wordpunct_tokenize
 from gensim.corpora.dictionary import Dictionary
 import torch
 from customTextDataset import *
@@ -24,21 +24,22 @@ class Experiment:
 
     def run_experiment(self, plot_only, path, device):
         experiment_id = hu.hash_dict({"experiment": self})
-        # print("Experiment ID: ", experiment_id)
         if plot_only == False:
             print("Run Experiment")
             full_dataset = load_dataset("roneneldan/TinyStories", split="train")["text"]
             ### Process data
-            """
             emp_loss_dict = {
                 "100": 351.5614624,
                 "200": 754.4559326,
                 "300": 1172.5532227,
                 "400": 1629.6152344,
                 "500": 2131.4968262,
-            }            
-            """
-            emp_loss_dict = {"1000": 4180.9946289}
+                "600": 2685.7810059,
+                "700": 3189.8449797,
+                "800": 3459.7507324,
+                "900": 3818.5856934,
+                "1000": 4180.9946289,
+            }
             # emp_loss_dict = {}
             for run_num, run in enumerate(self.runs):
                 torch.manual_seed(0)
@@ -73,10 +74,8 @@ class Experiment:
         ) as f:
             experiment = pickle.load(f)
         f.close()
-        for run in experiment["experiment"].runs:
-            print(run.emp_loss)
+        print(experiment["experiment"])
         ### Plot results
-
         print("Plot Experiment")
         plot_experiment(experiment["experiment"], path)
 
@@ -148,7 +147,7 @@ class Experiment:
                 dim=0,
             )
             num_unique_rows = unique_rows.size(0)
-            unique_beginnings = unique_beginnings + num_unique_rows
+            unique_beginnings += num_unique_rows
 
             # for each unique row
             for i in range(num_unique_rows):
@@ -161,12 +160,12 @@ class Experiment:
                         # AND
                         # check if next token in data sequence (beginning) j equals token gamma
                         if inverse[j] == i and training_dataset[j, t] == gamma:
-                            pi_hat = pi_hat + 1
+                            pi_hat += 1
 
                     pi_hat = pi_hat / counts[i]
                     # check if pi_hat == 0
                     if pi_hat != 0:
-                        emp_loss = emp_loss + -counts[i] * pi_hat * torch.log(pi_hat)
+                        emp_loss += -counts[i] * pi_hat * torch.log(pi_hat)
 
         print("Unique Beginnings:", unique_beginnings)
         # print(emp_loss.item())
@@ -180,16 +179,16 @@ class Experiment:
 
         criterion = nn.CrossEntropyLoss(reduction="sum")
 
-        optimizer = optim.Adam(run.model_obj.parameters(), lr=0.001)
+        optimizer = optim.Adam(run.model_obj.parameters(), lr=0.01)
 
         ### Run Training loop
         trainloader = torch_data.DataLoader(
             run.training_dataset, batch_size=batch_size, shuffle=False
         )
         training_loss_vals = []
-        loss_sum = 0
         step_size_decreased_1 = False
         step_size_decreased_2 = False
+        step_size_decreased_3 = False
         for epoch in range(self.epochs):
             for _, sequence_batch in enumerate(trainloader):
                 sequence_batch = sequence_batch.to(device)
@@ -204,8 +203,6 @@ class Experiment:
                 loss.backward()
                 optimizer.step()
             full_loss = compute_full_training_loss(run, device, batch_size)
-            loss_sum += full_loss
-            training_loss_vals.append(full_loss)
             if (full_loss - run.emp_loss < 100) and (not step_size_decreased_1):
                 print("Decrease step size first")
                 optimizer.param_groups[0]["lr"] = optimizer.param_groups[0]["lr"] * 0.1
@@ -214,8 +211,14 @@ class Experiment:
                 print("Decrease step size second")
                 optimizer.param_groups[0]["lr"] = optimizer.param_groups[0]["lr"] * 0.1
                 step_size_decreased_2 = True
+            if (full_loss - run.emp_loss < 1) and (not step_size_decreased_3):
+                print("Decrease step size third")
+                optimizer.param_groups[0]["lr"] = optimizer.param_groups[0]["lr"] * 0.1
+                step_size_decreased_3 = True
             if (epoch + 1) % 100 == 0:
                 print(f"Epoch: {epoch+1}, Loss: {full_loss}")
+
+        training_loss_vals.append(full_loss)
 
         print(f"Final Epoch Loss: {full_loss}")
         print(f"Empirical Loss: {run.emp_loss}")

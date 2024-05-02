@@ -1,12 +1,14 @@
 import matplotlib.pyplot as plt
 import os
+import matplotlib.colors as colors
+import numpy as np
 
 
 def plot_experiment(experiment, path):
     dataset_sizes = []
     m_vals = []
     heatmap_data = []
-    training_threshold = 10000
+    training_threshold = 0.01
 
     for run in experiment.runs:
         if not (run.n in dataset_sizes):
@@ -16,7 +18,6 @@ def plot_experiment(experiment, path):
     i = 0
     min_model_num_params = []
     min_model_ms = []
-    # print(experiment.runs)
     for dataset_size in dataset_sizes:
         yrow = []
         min_m = 1e8
@@ -66,7 +67,7 @@ def plot_experiment(experiment, path):
     plt.figure(0)
     plot_heatmap(
         path=path,
-        data=heatmap_data_rev,
+        data=np.array(heatmap_data_rev),
         xlabels=m_vals,
         ylabels=dataset_sizes_rev,
     )
@@ -92,12 +93,14 @@ def plot_experiment(experiment, path):
 
 
 def plot_heatmap(path, data, xlabels, ylabels):
-    plt.imshow(data, cmap="bone", interpolation="nearest")
+    plot = plt.imshow(
+        data, cmap="bone", norm=colors.LogNorm(vmin=data.min(), vmax=data.max())
+    )
     plt.xlabel("Hidden Dimension Size")
     plt.ylabel("Dataset Size")
     plt.xticks(range(len(xlabels)), xlabels)
     plt.yticks(range(len(ylabels)), ylabels)
-    plt.colorbar()
+    plt.colorbar(plot, shrink=0.67, format="%1.3g")
     plt.savefig(
         os.path.join(path, "plots", "heatmap.pdf"),
         bbox_inches="tight",

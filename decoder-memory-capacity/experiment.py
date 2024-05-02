@@ -29,13 +29,17 @@ class Experiment:
             print("Run Experiment")
             full_dataset = load_dataset("roneneldan/TinyStories", split="train")["text"]
             ### Process data
+            """
             emp_loss_dict = {
                 "100": 351.5614624,
                 "200": 754.4559326,
                 "300": 1172.5532227,
                 "400": 1629.6152344,
                 "500": 2131.4968262,
-            }
+            }            
+            """
+            emp_loss_dict = {"1000": 4180.9946289}
+            # emp_loss_dict = {}
             for run_num, run in enumerate(self.runs):
                 torch.manual_seed(0)
                 run.vocab_size, run.training_dataset = self.process_data(
@@ -46,7 +50,9 @@ class Experiment:
                 run.model_obj, run.model_num_params = self.create_model(run, device)
                 if not (str(run.n) in emp_loss_dict):
                     print("---Compute Empirical Loss---")
-                    emp_loss_dict[str(run.n)] = self.compute_empirical_loss(run)
+                    emp_loss_dict[str(run.n)], run.unique_beginnings = (
+                        self.compute_empirical_loss(run)
+                    )
                     run.emp_loss = emp_loss_dict[str(run.n)]
                 else:
                     run.emp_loss = emp_loss_dict[str(run.n)]
@@ -69,7 +75,6 @@ class Experiment:
         f.close()
         for run in experiment["experiment"].runs:
             print(run.emp_loss)
-        # print(experiment)
         ### Plot results
 
         print("Plot Experiment")
@@ -99,10 +104,12 @@ class Experiment:
                 storyID.append(vocab.token2id[word])
             datasetIDs.append(storyID)
 
-        # vocab_size = 10
-        # datasetIDs = torch.randint(1, vocab_size, (5, run.sequence_length))
+        datasetIDs = torch.tensor(datasetIDs)
 
-        training_dataset = CustomTextDataset(sequence=torch.tensor(datasetIDs))
+        # vocab_size = 200
+        # datasetIDs = torch.randint(1, vocab_size, (run.n, run.sequence_length))
+
+        training_dataset = CustomTextDataset(sequence=datasetIDs)
         return vocab_size, training_dataset
 
     def create_model(self, run, device):
@@ -163,7 +170,7 @@ class Experiment:
 
         print("Unique Beginnings:", unique_beginnings)
         # print(emp_loss.item())
-        return emp_loss.item()
+        return emp_loss.item(), unique_beginnings
 
     def train(self, run, device):
         if self.batch_size == "full":
@@ -173,8 +180,7 @@ class Experiment:
 
         criterion = nn.CrossEntropyLoss(reduction="sum")
 
-        optimizer = optim.Adam(run.model_obj.parameters(), lr=0.0001)
-        # optimizer = optim.SGD(run.model_obj.parameters(), lr=0.01)
+        optimizer = optim.Adam(run.model_obj.parameters(), lr=0.001)
 
         ### Run Training loop
         trainloader = torch_data.DataLoader(
@@ -182,15 +188,13 @@ class Experiment:
         )
         training_loss_vals = []
         loss_sum = 0
-        loss_sum_recent = 0
-        epoch_prev = 0
+        step_size_decreased_1 = False
+        step_size_decreased_2 = False
         for epoch in range(self.epochs):
             for _, sequence_batch in enumerate(trainloader):
                 sequence_batch = sequence_batch.to(device)
                 optimizer.zero_grad()
                 output = run.model_obj(sequence_batch[:, :-1])  # sequence_batch[:, :-1]
-                # print("Output Size: ", output.contiguous().view(-1, run.vocab_size))
-                # sprint("Target Size: ", sequence_batch[:, 1:].contiguous().view(-1))
                 loss = criterion(
                     output.contiguous().view(-1, run.vocab_size),
                     sequence_batch[:, 1:]
@@ -202,13 +206,14 @@ class Experiment:
             full_loss = compute_full_training_loss(run, device, batch_size)
             loss_sum += full_loss
             training_loss_vals.append(full_loss)
-            # if epoch > 1000 and (loss_sum / epoch) < full_loss:
-            #     optimizer.param_groups[0]["lr"] *= 0.1
-            #     print("Step size decreased to:", optimizer.param_groups[0]["lr"])
-            if (epoch + 1) == int(self.epochs * 0.5):
-                optimizer.param_groups[0]["lr"] = 0.00001
-            # if (epoch + 1) == int(self.epochs * 0.75):
-            #     optimizer.param_groups[0]["lr"] = 0.00001
+            if (full_loss - run.emp_loss < 100) and (not step_size_decreased_1):
+                print("Decrease step size first")
+                optimizer.param_groups[0]["lr"] = optimizer.param_groups[0]["lr"] * 0.1
+                step_size_decreased_1 = True
+            if (full_loss - run.emp_loss < 10) and (not step_size_decreased_2):
+                print("Decrease step size second")
+                optimizer.param_groups[0]["lr"] = optimizer.param_groups[0]["lr"] * 0.1
+                step_size_decreased_2 = True
             if (epoch + 1) % 100 == 0:
                 print(f"Epoch: {epoch+1}, Loss: {full_loss}")
 
@@ -236,5 +241,5 @@ def compute_full_training_loss(run, device, batch_size):
         )
         full_loss += loss
 
-    full_loss = full_loss  # / run.n
+    full_loss = full_loss
     return full_loss.item()

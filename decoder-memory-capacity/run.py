@@ -8,6 +8,7 @@ class Run:
     sequence_length: int
     d: int
     vocab_size: int = 0
+    # unique_beginnings: int = 0
     training_dataset: any = None
     model_obj: any = None
     model_num_params: int = 0

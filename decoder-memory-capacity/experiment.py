@@ -26,21 +26,33 @@ class Experiment:
         experiment_id = hu.hash_dict({"experiment": self})
         if plot_only == False:
             print("Run Experiment")
+            np.random.seed(0)
             full_dataset = load_dataset("roneneldan/TinyStories", split="train")["text"]
+            full_dataset = np.array(full_dataset)
+            # print("Before shuffle\n")
+            # print(full_dataset[0:2])
+            np.random.shuffle(full_dataset)
+            # print("After shuffle\n")
+            # print(full_dataset[0:2])
+            full_dataset = full_dataset.tolist()
+            # print("Back to list\n")
+            # print(full_dataset[0:2])
             ### Process data
+            """
             emp_loss_dict = {
-                "100": 351.5614624,
-                "200": 754.4559326,
-                "300": 1172.5532227,
-                "400": 1629.6152344,
-                "500": 2131.4968262,
-                "600": 2685.7810059,
-                "700": 3189.8449797,
-                "800": 3459.7507324,
-                "900": 3818.5856934,
-                "1000": 4180.9946289,
+                "100": 351.5614624,  # 283
+                "200": 754.4559326,  # 649
+                "300": 1172.5532227,  # 979
+                "400": 1629.6152344,  # 1258
+                "500": 2131.4968262,  # 1559
+                "600": 2685.7810059,  # 1838
+                "700": 3189.8449797,  # 1929
+                "800": 3459.7507324,  # 2508
+                "900": 3818.5856934,  # 2517
+                "1000": 4180.9946289,  # 2932
             }
-            # emp_loss_dict = {}
+            """
+            emp_loss_dict = {}
             for run_num, run in enumerate(self.runs):
                 torch.manual_seed(0)
                 run.vocab_size, run.training_dataset = self.process_data(

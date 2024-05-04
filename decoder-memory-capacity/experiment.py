@@ -227,10 +227,9 @@ class Experiment:
                 print("Decrease step size third")
                 optimizer.param_groups[0]["lr"] = optimizer.param_groups[0]["lr"] * 0.1
                 step_size_decreased_3 = True
-            if (epoch + 1) % 100 == 0:
+            if (epoch + 1) % 1000 == 0:
                 print(f"Epoch: {epoch+1}, Loss: {full_loss}")
-
-        training_loss_vals.append(full_loss)
+                training_loss_vals.append(full_loss)
 
         print(f"Final Epoch Loss: {full_loss}")
         print(f"Empirical Loss: {run.emp_loss}")

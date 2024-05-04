@@ -11,33 +11,15 @@ default_height_to_width_ratio = (5.0**0.5 - 1.0) / 2.0
 
 def plot_experiment(experiment, path):
     dataset_sizes = []
-    unique_beginnings = [
-        283,
-        649,
-        979,
-        1258,
-        1559,
-        1838,
-        1929,
-        2508,
-        2517,
-        2932,
-    ]  # placeholder for now
+    unique_beginnings = [] 
     m_vals = []
     heatmap_data = []
-    eps = 0.0001
-
-    for run in experiment.runs:
-        if run.m == 4096:
-            experiment.runs.remove(run)
-    for run in experiment.runs:
-        if run.m == 8192:
-            experiment.runs.remove(run)
+    eps = 0.1
 
     for run in experiment.runs:
         if not (run.n in dataset_sizes):
             dataset_sizes.append(run.n)
-            # unique_beginnings.append(run.unique_beginnings)
+            unique_beginnings.append(run.unique_beginnings)
         if not (run.m in m_vals):
             m_vals.append(run.m)
     i = 0
@@ -64,8 +46,8 @@ def plot_experiment(experiment, path):
             if (
                 experiment.runs[i].training_loss_values[-1]
                 - experiment.runs[i].emp_loss
-                < eps * experiment.runs[i].emp_loss
-                and experiment.runs[i].m < min_m
+                < (eps * experiment.runs[i].emp_loss)
+                and (experiment.runs[i].m < min_m)
             ):
                 min_model_ms.append(experiment.runs[i].m)
                 min_model_num_params.append(experiment.runs[i].model_num_params)
@@ -88,7 +70,7 @@ def plot_experiment(experiment, path):
     """
 
     # Reverses order of lists
-    dataset_sizes_rev = dataset_sizes[::-1]
+    # dataset_sizes_rev = dataset_sizes[::-1]
     unique_beginnings_rev = unique_beginnings[::-1]
     heatmap_data_rev = heatmap_data[::-1]
 

@@ -24,7 +24,7 @@ embed_size = 16
 sequence_length = 10
 epochs = 100000
 batch_size = "full"
-plot_only = False
+plot_only = True
 n_vals = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
 m_vals = [16, 32, 64, 128, 256, 512, 1024, 2048]
 

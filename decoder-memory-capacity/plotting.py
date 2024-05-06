@@ -11,10 +11,10 @@ default_height_to_width_ratio = (5.0**0.5 - 1.0) / 2.0
 
 def plot_experiment(experiment, path):
     dataset_sizes = []
-    unique_beginnings = [] 
+    unique_beginnings = []
     m_vals = []
     heatmap_data = []
-    eps = 0.001
+    eps = 0.01
 
     for run in experiment.runs:
         if not (run.n in dataset_sizes):
@@ -29,8 +29,8 @@ def plot_experiment(experiment, path):
         yrow = []
         min_m = 1e8
         for m in m_vals:
-            '''
             print("Run:", i + 1)
+            """
             print("Unique Beginning:", unique_beginning_val)
             print("Hidden Size:", m)
             print("Dataset Size", experiment.runs[i].n)
@@ -38,17 +38,14 @@ def plot_experiment(experiment, path):
             print("Unique Beginning:", experiment.runs[i].unique_beginnings)
             print("Final Training Loss:", experiment.runs[i].training_loss_values[-1])
             print("Num Params:", experiment.runs[i].model_num_params)            
-            '''
-            yrow.append(
-                experiment.runs[i].training_loss_values[-1]
-                - experiment.runs[i].emp_loss
-            )
-            if (
-                experiment.runs[i].training_loss_values[-1]
-                - experiment.runs[i].emp_loss
-                < (eps * experiment.runs[i].emp_loss)
-                and (experiment.runs[i].m < min_m)
-            ):
+            """
+            print(experiment.runs[i].training_loss_values)
+            print(experiment.runs[i].training_loss_values[-5])
+            training_loss = experiment.runs[i].training_loss_values[-5]
+            yrow.append(training_loss - experiment.runs[i].emp_loss)
+            if training_loss - experiment.runs[i].emp_loss < (
+                eps * experiment.runs[i].emp_loss
+            ) and (experiment.runs[i].m < min_m):
                 min_model_ms.append(experiment.runs[i].m)
                 min_model_num_params.append(experiment.runs[i].model_num_params)
                 min_m = experiment.runs[i].m
@@ -74,12 +71,10 @@ def plot_experiment(experiment, path):
     unique_beginnings_rev = unique_beginnings[::-1]
     heatmap_data_rev = heatmap_data[::-1]
 
-    """
-    print("Heatmap Data Rev")
-    print(heatmap_data_rev)
-    print("Dataset Sizes Rev")
-    print(dataset_sizes_rev)    
-    """
+    # print("Heatmap Data Rev")
+    # print(heatmap_data_rev)
+    # print("Unique Beginnings Sizes Rev")
+    # print(unique_beginnings_rev)
 
     """
     nrows = 1

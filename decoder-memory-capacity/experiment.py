@@ -39,6 +39,7 @@ class Experiment:
             # print(full_dataset[0:2])
             ### Process data
             """
+            # no shuffling
             emp_loss_dict = {
                 "100": 351.5614624,  # 283
                 "200": 754.4559326,  # 649
@@ -52,7 +53,20 @@ class Experiment:
                 "1000": 4180.9946289,  # 2932
             }
             """
-            emp_loss_dict = {}
+            # shuffling seed 0
+            emp_loss_dict = {
+                "100": (256.0145568847656, 377),
+                "200": (612.2843017578125, 699),
+                "300": (1019.3252563476562, 952),
+                "400": (1462.6365966796875, 1123),
+                "500": (1907.5855712890625, 1459),
+                "600": (2377.183837890625, 1637),
+                "700": (2802.576904296875, 1896),
+                "800": (3289.213134765625, 2117),
+                "900": (3731.559326171875, 2374),
+                "1000": (4236.576171875, 2637),
+            }
+            # emp_loss_dict = {}
             for run_num, run in enumerate(self.runs):
                 torch.manual_seed(0)
                 run.vocab_size, run.training_dataset = self.process_data(
@@ -63,13 +77,15 @@ class Experiment:
                 run.model_obj, run.model_num_params = self.create_model(run, device)
                 if not (str(run.n) in emp_loss_dict):
                     print("---Compute Empirical Loss---")
-                    emp_loss_dict[str(run.n)], run.unique_beginnings = (
-                        self.compute_empirical_loss(run)
+                    run.emp_loss, run.unique_beginnings = self.compute_empirical_loss(
+                        run
                     )
-                    run.emp_loss = emp_loss_dict[str(run.n)]
+                    emp_loss_dict[str(run.n)] = (run.emp_loss, run.unique_beginnings)
                 else:
-                    run.emp_loss = emp_loss_dict[str(run.n)]
-                print("Empirical Loss:", emp_loss_dict[str(run.n)])
+                    run.emp_loss = emp_loss_dict[str(run.n)][0]
+                    run.unique_beginnings = emp_loss_dict[str(run.n)][1]
+                print("Empirical Loss:", run.emp_loss)
+                print("Unique Beginnings:", run.unique_beginnings)
 
                 print("---Training---")
                 run.training_loss_values = self.train(run, device)
@@ -86,7 +102,7 @@ class Experiment:
         ) as f:
             experiment = pickle.load(f)
         f.close()
-        print(experiment["experiment"])
+        # print(experiment["experiment"].runs)
         ### Plot results
         print("Plot Experiment")
         plot_experiment(experiment["experiment"], path)
@@ -179,7 +195,6 @@ class Experiment:
                     if pi_hat != 0:
                         emp_loss += -counts[i] * pi_hat * torch.log(pi_hat)
 
-        print("Unique Beginnings:", unique_beginnings)
         # print(emp_loss.item())
         return emp_loss.item(), unique_beginnings
 
@@ -190,17 +205,18 @@ class Experiment:
             batch_size = self.batch_size
 
         criterion = nn.CrossEntropyLoss(reduction="sum")
-
-        optimizer = optim.Adam(run.model_obj.parameters(), lr=0.01)
-
+        step_size = 0.0001
+        optimizer = optim.Adam(run.model_obj.parameters(), lr=step_size)
+        print("Step Size:", step_size)
         ### Run Training loop
         trainloader = torch_data.DataLoader(
             run.training_dataset, batch_size=batch_size, shuffle=False
         )
         training_loss_vals = []
-        step_size_decreased_1 = False
-        step_size_decreased_2 = False
-        step_size_decreased_3 = False
+        # step_size_decreased_1 = False
+        # step_size_decreased_2 = False
+        # step_size_decreased_3 = False
+        print("Epochs:", self.epochs)
         for epoch in range(self.epochs):
             for _, sequence_batch in enumerate(trainloader):
                 sequence_batch = sequence_batch.to(device)
@@ -215,6 +231,7 @@ class Experiment:
                 loss.backward()
                 optimizer.step()
             full_loss = compute_full_training_loss(run, device, batch_size)
+            """
             if (full_loss - run.emp_loss < 100) and (not step_size_decreased_1):
                 print("Decrease step size first")
                 optimizer.param_groups[0]["lr"] = optimizer.param_groups[0]["lr"] * 0.1
@@ -226,9 +243,10 @@ class Experiment:
             if (full_loss - run.emp_loss < 1) and (not step_size_decreased_3):
                 print("Decrease step size third")
                 optimizer.param_groups[0]["lr"] = optimizer.param_groups[0]["lr"] * 0.1
-                step_size_decreased_3 = True
-            if (epoch + 1) % 1000 == 0:
-                print(f"Epoch: {epoch+1}, Loss: {full_loss}")
+                step_size_decreased_3 = True            
+            """
+            if epoch % 10000 == 0:
+                print(f"Epoch: {epoch}, Loss: {full_loss}")
                 training_loss_vals.append(full_loss)
 
         print(f"Final Epoch Loss: {full_loss}")

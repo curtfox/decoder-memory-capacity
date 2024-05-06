@@ -22,7 +22,7 @@ else:
 # Set parameters
 embed_size = 16
 sequence_length = 10
-epochs = 25000
+epochs = 100000
 batch_size = "full"
 plot_only = False
 n_vals = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]

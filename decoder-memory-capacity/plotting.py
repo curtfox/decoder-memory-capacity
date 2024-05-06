@@ -14,7 +14,7 @@ def plot_experiment(experiment, path):
     unique_beginnings = [] 
     m_vals = []
     heatmap_data = []
-    eps = 0.1
+    eps = 0.001
 
     for run in experiment.runs:
         if not (run.n in dataset_sizes):
@@ -81,6 +81,7 @@ def plot_experiment(experiment, path):
     print(dataset_sizes_rev)    
     """
 
+    """
     nrows = 1
     ncols = 2
     _, ax = plot_settings(nrows=nrows, ncols=ncols)
@@ -101,7 +102,8 @@ def plot_experiment(experiment, path):
         ylabel="Hidden Dimension Size",
     )
 
-    plt.savefig(os.path.join(path, "plots", "plot_m.pdf"), bbox_inches="tight")
+    plt.savefig(os.path.join(path, "plots", "plot_m.pdf"), bbox_inches="tight")    
+    """
 
     nrows = 1
     ncols = 2

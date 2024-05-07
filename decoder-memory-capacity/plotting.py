@@ -16,12 +16,19 @@ def plot_experiment(experiment, path):
     heatmap_data = []
     eps = 0.01
 
+    """
+    for run in experiment.runs:
+        if run.m == ...:
+            experiment.runs.remove(run)    
+    """
+
     for run in experiment.runs:
         if not (run.n in dataset_sizes):
             dataset_sizes.append(run.n)
             unique_beginnings.append(run.unique_beginnings)
         if not (run.m in m_vals):
             m_vals.append(run.m)
+
     i = 0
     min_model_num_params = []
     min_model_ms = []

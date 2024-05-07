@@ -30,19 +30,19 @@ def plot_experiment(experiment, path):
         min_m = 1e8
         for m in m_vals:
             print("Run:", i + 1)
+            print("Unique Beginning:", experiment.runs[i].unique_beginnings)
+            print("Actual Hidden Size", experiment.runs[i].m)
             """
-            print("Unique Beginning:", unique_beginning_val)
+            print("Unique Beginning:", unique_beginning_val) 
             print("Hidden Size:", m)
             print("Dataset Size", experiment.runs[i].n)
-            print("Actual Hidden Size", experiment.runs[i].m)
-            print("Unique Beginning:", experiment.runs[i].unique_beginnings)
             print("Final Training Loss:", experiment.runs[i].training_loss_values[-1])
             print("Num Params:", experiment.runs[i].model_num_params)            
             """
             print(experiment.runs[i].training_loss_values)
             print(experiment.runs[i].training_loss_values[-5])
             training_loss = experiment.runs[i].training_loss_values[-5]
-            yrow.append(training_loss - experiment.runs[i].emp_loss)
+            yrow.append((training_loss - experiment.runs[i].emp_loss))
             if training_loss - experiment.runs[i].emp_loss < (
                 eps * experiment.runs[i].emp_loss
             ) and (experiment.runs[i].m < min_m):
@@ -108,7 +108,7 @@ def plot_experiment(experiment, path):
         axis=ax[0],
         data=np.array(heatmap_data_rev),
         xlabel="Hidden Dimension Size",
-        ylabel="Unique Beginnings",
+        ylabel="Unique Contexts",
         xticks=m_vals,
         yticks=unique_beginnings_rev,
     )
@@ -116,7 +116,29 @@ def plot_experiment(experiment, path):
         axis=ax[1],
         xdata=unique_beginnings,
         ydata=min_model_num_params,
-        xlabel="Unique Beginnings",
+        xlabel="Unique Contexts",
+        ylabel="Number of Parameters",
+    )
+
+    plt.savefig(os.path.join(path, "plots", "plot_num_params.pdf"), bbox_inches="tight")
+
+    nrows = 1
+    ncols = 2
+    _, ax = plot_settings(nrows=nrows, ncols=ncols)
+
+    plot_heatmap(
+        axis=ax[0],
+        data=np.array(heatmap_data_rev),
+        xlabel="Hidden Dimension Size",
+        ylabel="Unique Contexts",
+        xticks=m_vals,
+        yticks=unique_beginnings_rev,
+    )
+    plot_lineplot(
+        axis=ax[1],
+        xdata=min_model_ms,
+        ydata=min_model_num_params,
+        xlabel="Hidden Dimension Size",
         ylabel="Number of Parameters",
     )
 
@@ -130,7 +152,7 @@ def plot_heatmap(axis, data, xlabel, ylabel, xticks, yticks):
     plot = axis.imshow(
         data,
         cmap="bone",
-        norm=colors.LogNorm(vmin=data.min(), vmax=data.max()),
+        # norm=colors.LogNorm(vmin=data.min(), vmax=data.max()),
         aspect=0.75,
     )
     axis.set_xlabel(xlabel)

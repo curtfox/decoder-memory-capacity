@@ -245,7 +245,7 @@ class Experiment:
                 optimizer.param_groups[0]["lr"] = optimizer.param_groups[0]["lr"] * 0.1
                 step_size_decreased_3 = True            
             """
-            if (epoch + 1) % 10000 == 0:
+            if (epoch + 1) % 5000 == 0:
                 print(f"Epoch: {epoch + 1}, Loss: {full_loss}")
                 training_loss_vals.append(full_loss)
 

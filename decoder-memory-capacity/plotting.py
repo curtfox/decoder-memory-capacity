@@ -18,8 +18,12 @@ def plot_experiment(experiment, path):
 
     """
     for run in experiment.runs:
-        if run.m == ...:
-            experiment.runs.remove(run)    
+        if run.m == 1024:
+            experiment.runs.remove(run)
+
+    for run in experiment.runs:
+        if run.m == 2048:
+            experiment.runs.remove(run)
     """
 
     for run in experiment.runs:
@@ -46,10 +50,13 @@ def plot_experiment(experiment, path):
             print("Final Training Loss:", experiment.runs[i].training_loss_values[-1])
             print("Num Params:", experiment.runs[i].model_num_params)            
             """
+            print()
             print(experiment.runs[i].training_loss_values)
-            print(experiment.runs[i].training_loss_values[-5])
-            training_loss = experiment.runs[i].training_loss_values[-5]
-            yrow.append((training_loss - experiment.runs[i].emp_loss))
+            training_loss = experiment.runs[i].training_loss_values[-1]
+            yrow.append(
+                (training_loss - experiment.runs[i].emp_loss)
+                # / experiment.runs[i].emp_loss
+            )
             if training_loss - experiment.runs[i].emp_loss < (
                 eps * experiment.runs[i].emp_loss
             ) and (experiment.runs[i].m < min_m):
@@ -127,8 +134,11 @@ def plot_experiment(experiment, path):
         ylabel="Number of Parameters",
     )
 
-    plt.savefig(os.path.join(path, "plots", "plot_num_params.pdf"), bbox_inches="tight")
+    plt.savefig(
+        os.path.join(path, "plots", "plot_num_params_uc.pdf"), bbox_inches="tight"
+    )
 
+    """
     nrows = 1
     ncols = 2
     _, ax = plot_settings(nrows=nrows, ncols=ncols)
@@ -149,9 +159,12 @@ def plot_experiment(experiment, path):
         ylabel="Number of Parameters",
     )
 
-    plt.savefig(os.path.join(path, "plots", "plot_num_params.pdf"), bbox_inches="tight")
+    plt.savefig(
+        os.path.join(path, "plots", "plot_num_params_m.pdf"), bbox_inches="tight"
+    )
 
-    plt.close("all")
+    plt.close("all")    
+    """
     return
 
 
@@ -159,7 +172,7 @@ def plot_heatmap(axis, data, xlabel, ylabel, xticks, yticks):
     plot = axis.imshow(
         data,
         cmap="bone",
-        # norm=colors.LogNorm(vmin=data.min(), vmax=data.max()),
+        norm=colors.LogNorm(vmin=data.min(), vmax=data.max()),
         aspect=0.75,
     )
     axis.set_xlabel(xlabel)

@@ -54,6 +54,7 @@ class Experiment:
             }
             """
             # shuffling seed 0
+            """
             emp_loss_dict = {
                 "100": (256.0145568847656, 377),
                 "200": (612.2843017578125, 699),
@@ -65,8 +66,9 @@ class Experiment:
                 "800": (3289.213134765625, 2117),
                 "900": (3731.559326171875, 2374),
                 "1000": (4236.576171875, 2637),
-            }
-            # emp_loss_dict = {}
+            }            
+            """
+            emp_loss_dict = {}
             for run_num, run in enumerate(self.runs):
                 torch.manual_seed(0)
                 run.vocab_size, run.training_dataset = self.process_data(

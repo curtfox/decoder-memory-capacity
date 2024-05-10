@@ -4,10 +4,10 @@ import torch
 from experiment import Experiment
 from run import Run
 
-# Get path
+# Get Path
 path = os.path.dirname(os.getcwd())
-print(path)
 
+# Create folders for experiments and plots
 if not os.path.exists(os.path.join(path, "experiments")):
     os.makedirs(os.path.join(path, "experiments"))
 if not os.path.exists(os.path.join(path, "plots")):
@@ -19,12 +19,12 @@ if torch.cuda.is_available():
 else:
     device = "cpu"
 
-# Set parameters
+### Set parameters ###
 embed_size = 16
 sequence_length = 10
 epochs = 50000
 batch_size = "full"
-plot_only = False
+plot_only = False  # change to True if you want to plot existing experimental results, assuming experiment pkl file already exists
 n_vals = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
 m_vals = [4, 8, 16, 32, 64, 128, 256, 512]
 

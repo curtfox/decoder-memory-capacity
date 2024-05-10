@@ -30,10 +30,6 @@ def plot_experiment(experiment, path):
         yrow = []
         min_m = 1e8
         for _ in m_vals:
-            print("Run:", i + 1)
-            print("Unique Beginning:", experiment.runs[i].unique_beginnings)
-            print("Actual Hidden Size", experiment.runs[i].m)
-            print(experiment.runs[i].training_loss_values)
             training_loss = experiment.runs[i].training_loss_values[-1]
             yrow.append((training_loss - experiment.runs[i].emp_loss))
             if training_loss - experiment.runs[i].emp_loss < (
@@ -69,7 +65,7 @@ def plot_experiment(experiment, path):
         ylabel="Number of Parameters",
     )
 
-    plt.savefig(os.path.join(path, "plots", "plot_num_params.pdf"), bbox_inches="tight")
+    plt.savefig(os.path.join(path, "plots", "plot.pdf"), bbox_inches="tight")
     return
 
 

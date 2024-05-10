@@ -136,7 +136,7 @@ class Experiment:
             num_unique_rows = unique_rows.size(0)
             unique_beginnings += num_unique_rows
 
-            # for each unique row
+            # for each unique context
             for i in range(num_unique_rows):
                 # for each token in vocab
                 for gamma in range(vocab_size):
@@ -182,6 +182,9 @@ class Experiment:
                 loss.backward()
                 optimizer.step()
             full_loss = compute_full_training_loss(run, device, batch_size)
+            if epoch == 0:
+                print(f"Epoch: {epoch}, Loss: {full_loss}")
+                training_loss_vals.append(full_loss)
             if (epoch + 1) % 5000 == 0:
                 print(f"Epoch: {epoch + 1}, Loss: {full_loss}")
                 training_loss_vals.append(full_loss)

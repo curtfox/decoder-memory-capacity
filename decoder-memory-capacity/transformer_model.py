@@ -41,13 +41,11 @@ class PositionWiseFeedForward(nn.Module):
 
     def __init__(self, embed_size, m):
         super(PositionWiseFeedForward, self).__init__()
-        self.layer1 = nn.Linear(embed_size, m)
-        # self.layer2 = nn.Linear(dim_ff, embed_size)
+        self.layer = nn.Linear(embed_size, m)
         self.act = nn.GELU()
 
     def forward(self, x):
-        out = self.act(self.layer1(x))
-        # out = self.layer2(out)
+        out = self.act(self.layer(x))
         return out
 
 

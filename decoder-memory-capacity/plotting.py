@@ -16,16 +16,6 @@ def plot_experiment(experiment, path):
     heatmap_data = []
     eps = 0.01
 
-    """
-    for run in experiment.runs:
-        if run.m == 1024:
-            experiment.runs.remove(run)
-
-    for run in experiment.runs:
-        if run.m == 2048:
-            experiment.runs.remove(run)
-    """
-
     for run in experiment.runs:
         if not (run.n in dataset_sizes):
             dataset_sizes.append(run.n)
@@ -36,27 +26,16 @@ def plot_experiment(experiment, path):
     i = 0
     min_model_num_params = []
     min_model_ms = []
-    for unique_beginning_val in unique_beginnings:
+    for _ in unique_beginnings:
         yrow = []
         min_m = 1e8
-        for m in m_vals:
+        for _ in m_vals:
             print("Run:", i + 1)
             print("Unique Beginning:", experiment.runs[i].unique_beginnings)
             print("Actual Hidden Size", experiment.runs[i].m)
-            """
-            print("Unique Beginning:", unique_beginning_val) 
-            print("Hidden Size:", m)
-            print("Dataset Size", experiment.runs[i].n)
-            print("Final Training Loss:", experiment.runs[i].training_loss_values[-1])
-            print("Num Params:", experiment.runs[i].model_num_params)            
-            """
-            print()
             print(experiment.runs[i].training_loss_values)
             training_loss = experiment.runs[i].training_loss_values[-1]
-            yrow.append(
-                (training_loss - experiment.runs[i].emp_loss)
-                # / experiment.runs[i].emp_loss
-            )
+            yrow.append((training_loss - experiment.runs[i].emp_loss))
             if training_loss - experiment.runs[i].emp_loss < (
                 eps * experiment.runs[i].emp_loss
             ) and (experiment.runs[i].m < min_m):
@@ -65,54 +44,10 @@ def plot_experiment(experiment, path):
                 min_m = experiment.runs[i].m
             i = i + 1
         heatmap_data.append(yrow)
-    """
-    print("Heatmap Data")
-    print(heatmap_data)
-    print("Min Model Params")
-    print(min_model_num_params)
-    print("Min Model m's")
-    print(min_model_ms)
-    print("M vals")
-    print(m_vals)
-    print("Dataset Sizes")
-    print(dataset_sizes)
-    print("Unique Beginnings")
-    print(unique_beginnings)    
-    """
 
     # Reverses order of lists
-    # dataset_sizes_rev = dataset_sizes[::-1]
     unique_beginnings_rev = unique_beginnings[::-1]
     heatmap_data_rev = heatmap_data[::-1]
-
-    # print("Heatmap Data Rev")
-    # print(heatmap_data_rev)
-    # print("Unique Beginnings Sizes Rev")
-    # print(unique_beginnings_rev)
-
-    """
-    nrows = 1
-    ncols = 2
-    _, ax = plot_settings(nrows=nrows, ncols=ncols)
-
-    plot_heatmap(
-        axis=ax[0],
-        data=np.array(heatmap_data_rev),
-        xlabel="Hidden Dimension Size",
-        ylabel="Unique Beginnings",
-        xticks=m_vals,
-        yticks=unique_beginnings_rev,
-    )
-    plot_lineplot(
-        axis=ax[1],
-        xdata=unique_beginnings,
-        ydata=min_model_ms,
-        xlabel="Unique Beginnings",
-        ylabel="Hidden Dimension Size",
-    )
-
-    plt.savefig(os.path.join(path, "plots", "plot_m.pdf"), bbox_inches="tight")    
-    """
 
     nrows = 1
     ncols = 2
@@ -134,37 +69,7 @@ def plot_experiment(experiment, path):
         ylabel="Number of Parameters",
     )
 
-    plt.savefig(
-        os.path.join(path, "plots", "plot_num_params_uc.pdf"), bbox_inches="tight"
-    )
-
-    """
-    nrows = 1
-    ncols = 2
-    _, ax = plot_settings(nrows=nrows, ncols=ncols)
-
-    plot_heatmap(
-        axis=ax[0],
-        data=np.array(heatmap_data_rev),
-        xlabel="Hidden Dimension Size",
-        ylabel="Unique Contexts",
-        xticks=m_vals,
-        yticks=unique_beginnings_rev,
-    )
-    plot_lineplot(
-        axis=ax[1],
-        xdata=min_model_ms,
-        ydata=min_model_num_params,
-        xlabel="Hidden Dimension Size",
-        ylabel="Number of Parameters",
-    )
-
-    plt.savefig(
-        os.path.join(path, "plots", "plot_num_params_m.pdf"), bbox_inches="tight"
-    )
-
-    plt.close("all")    
-    """
+    plt.savefig(os.path.join(path, "plots", "plot_num_params.pdf"), bbox_inches="tight")
     return
 
 

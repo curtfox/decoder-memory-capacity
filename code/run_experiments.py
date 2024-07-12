@@ -24,7 +24,7 @@ sequence_length = 10
 epochs = 50000
 batch_size = "full"
 plot_only = False  # change to True if you want to plot existing experimental results, assuming experiment pkl file already exists
-n_vals = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
+n_vals = [100]  # , 200, 300, 400, 500, 600, 700, 800, 900, 1000]
 m_vals = [4, 8, 16, 32, 64, 128, 256, 512]
 
 runs = []

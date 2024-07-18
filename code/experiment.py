@@ -18,6 +18,7 @@ import os
 
 @dataclass
 class Experiment:
+    dataset: str
     batch_size: any
     epochs: int
     runs: list[Run] = field(default_factory=list)
@@ -26,15 +27,11 @@ class Experiment:
         experiment_id = hu.hash_dict({"experiment": self})
         if plot_only == False:
             print("Run Experiment")
-            np.random.seed(0)  # change numpy seed here
-            full_dataset = load_dataset("roneneldan/TinyStories", split="train")["text"]
-            full_dataset = np.array(full_dataset)
-            np.random.shuffle(full_dataset)
-            full_dataset = full_dataset.tolist()
+            full_dataset = self.process_data()
             emp_loss_dict = {}
             for run_num, run in enumerate(self.runs):
                 torch.manual_seed(0)  # change torch seed here
-                run.vocab_size, run.training_dataset = self.process_data(
+                run.vocab_size, run.training_dataset = self.tokenize_data(
                     full_dataset, run
                 )
                 print("-----Run " + str(run_num + 1) + "-----")
@@ -67,9 +64,19 @@ class Experiment:
         f.close()
         ### Plot results
         print("Plot Experiment")
+        print(experiment["experiment"])
         plot_experiment(experiment["experiment"], path)
 
-    def process_data(self, full_dataset, run):
+    def process_data(self):
+        np.random.seed(0)  # change numpy seed here
+        if self.dataset == "tinystories":
+            full_dataset = load_dataset("roneneldan/TinyStories", split="train")["text"]
+            full_dataset = np.array(full_dataset)
+            np.random.shuffle(full_dataset)
+            full_dataset = full_dataset.tolist()
+        return full_dataset
+
+    def tokenize_data(self, full_dataset, run):
         ### Tokenize data
         datasetTokens = []
         j = 0

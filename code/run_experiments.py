@@ -21,6 +21,7 @@ else:
 ### Set parameters ###
 embed_size = 16
 sequence_length = 10
+dataset = "tinystories"
 epochs = 50000
 batch_size = "full"
 plot_only = False  # change to True if you want to plot existing experimental results, assuming experiment pkl file already exists
@@ -36,6 +37,7 @@ for n in n_vals:
 
 # Run experiment
 ex = Experiment(
+    dataset=dataset,
     batch_size=batch_size,
     epochs=epochs,
     runs=runs,

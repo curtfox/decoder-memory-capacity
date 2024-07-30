@@ -18,3 +18,7 @@ python run_experiments.py
 
 Note that the experimental settings can be changed within the run_experiments.py, under the ### Set parameters ### comment. However, the current settings are what is used within the paper.
 
+## Link to Paper
+
+See the following link for the paper: https://arxiv.org/abs/2405.13718
+

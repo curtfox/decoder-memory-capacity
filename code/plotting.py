@@ -66,7 +66,9 @@ def plot_experiment(experiment, path):
     )
 
     plt.savefig(
-        os.path.join(path, "plots", "plot-" + str(experiment.train_subset) + ".pdf"),
+        os.path.join(
+            path, "plots", "plot-subset-" + str(experiment.train_subset) + ".pdf"
+        ),
         bbox_inches="tight",
     )
     return

@@ -129,7 +129,6 @@ class Experiment:
             for name, param in model.named_parameters():
                 if "attention" in name or "embed" in name:
                     param.requires_grad = False
-                    # print(name)
             summary(model)
         model_trained_params = sum(
             p.numel() for p in model.parameters() if p.requires_grad

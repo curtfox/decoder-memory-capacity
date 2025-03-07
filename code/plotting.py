@@ -65,7 +65,10 @@ def plot_experiment(experiment, path):
         ylabel="Number of Parameters",
     )
 
-    plt.savefig(os.path.join(path, "plots", "plot.pdf"), bbox_inches="tight")
+    plt.savefig(
+        os.path.join(path, "plots", "plot-" + str(experiment.train_subset) + ".pdf"),
+        bbox_inches="tight",
+    )
     return
 
 

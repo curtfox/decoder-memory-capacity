@@ -17,6 +17,7 @@ def plot_experiment(experiment, path):
     eps = 0.01
 
     for run in experiment.runs:
+        print(run.vocab_size)
         if not (run.n in dataset_sizes):
             dataset_sizes.append(run.n)
             unique_beginnings.append(run.unique_beginnings)

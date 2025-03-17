@@ -21,9 +21,11 @@ else:
 ### Set parameters ###
 embed_size = 16
 sequence_length = 10
+dataset = "tinystories"
 epochs = 50000
 batch_size = "full"
-plot_only = False  # change to True if you want to plot existing experimental results, assuming experiment pkl file already exists
+train_subset = False  # change to True to only train linear layers
+plot_only = True  # change to True if you want to plot existing experimental results, assuming experiment pkl file already exists
 n_vals = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
 m_vals = [4, 8, 16, 32, 64, 128, 256, 512]
 
@@ -36,8 +38,10 @@ for n in n_vals:
 
 # Run experiment
 ex = Experiment(
+    dataset=dataset,
     batch_size=batch_size,
     epochs=epochs,
     runs=runs,
+    train_subset=train_subset,
 )
 ex.run_experiment(plot_only=plot_only, path=path, device=device)

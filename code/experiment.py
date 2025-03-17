@@ -18,28 +18,35 @@ import os
 
 @dataclass
 class Experiment:
+    dataset: str
     batch_size: any
     epochs: int
+    train_subset: bool
     runs: list[Run] = field(default_factory=list)
 
     def run_experiment(self, plot_only, path, device):
         experiment_id = hu.hash_dict({"experiment": self})
         if plot_only == False:
             print("Run Experiment")
-            np.random.seed(0)  # change numpy seed here
-            full_dataset = load_dataset("roneneldan/TinyStories", split="train")["text"]
-            full_dataset = np.array(full_dataset)
-            np.random.shuffle(full_dataset)
-            full_dataset = full_dataset.tolist()
+            full_dataset = self.process_data()
             emp_loss_dict = {}
             for run_num, run in enumerate(self.runs):
                 torch.manual_seed(0)  # change torch seed here
-                run.vocab_size, run.training_dataset = self.process_data(
+                run.vocab_size, run.training_dataset = self.tokenize_data(
                     full_dataset, run
                 )
                 print("-----Run " + str(run_num + 1) + "-----")
                 ### Train model
-                run.model_obj, run.model_num_params = self.create_model(run, device)
+                (
+                    run.model_obj,
+                    run.model_num_params,
+                    run.model_num_trained_params,
+                    run.model_num_untrained_params,
+                ) = self.create_model(run, device)
+                print("Number of Params")
+                print(run.model_num_params)
+                print(run.model_num_trained_params)
+                print(run.model_num_untrained_params)
                 if not (str(run.n) in emp_loss_dict):
                     print("---Compute Empirical Loss---")
                     run.emp_loss, run.unique_beginnings = self.compute_empirical_loss(
@@ -67,9 +74,19 @@ class Experiment:
         f.close()
         ### Plot results
         print("Plot Experiment")
+        print(experiment["experiment"])
         plot_experiment(experiment["experiment"], path)
 
-    def process_data(self, full_dataset, run):
+    def process_data(self):
+        np.random.seed(0)  # change numpy seed here
+        if self.dataset == "tinystories":
+            full_dataset = load_dataset("roneneldan/TinyStories", split="train")["text"]
+            full_dataset = np.array(full_dataset)
+            np.random.shuffle(full_dataset)
+            full_dataset = full_dataset.tolist()
+        return full_dataset
+
+    def tokenize_data(self, full_dataset, run):
         ### Tokenize data
         datasetTokens = []
         j = 0
@@ -107,8 +124,20 @@ class Experiment:
             device=device,
         ).to(device)
         summary(model)
+
         model_num_params = sum(p.numel() for p in model.parameters())
-        return model, model_num_params
+        if self.train_subset:
+            for name, param in model.named_parameters():
+                if "attention" in name or "embed" in name:
+                    param.requires_grad = False
+            summary(model)
+        model_trained_params = sum(
+            p.numel() for p in model.parameters() if p.requires_grad
+        )
+        model_untrained_params = sum(
+            p.numel() for p in model.parameters() if (not p.requires_grad)
+        )
+        return model, model_num_params, model_trained_params, model_untrained_params
 
     def compute_empirical_loss(self, run):
 

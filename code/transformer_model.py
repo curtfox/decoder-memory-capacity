@@ -18,30 +18,30 @@ class DecoderOnlyTransformer(nn.Module):
         self.linear = nn.Linear(m, omega)
 
     def forward(self, x):
-        embedded = self.pos_encode(self.embed(x))
-        dec_in = embedded
+        dec_in = self.embed(x)
+        dec_in = self.pos_encode(dec_in)
         dec_out = self.decoder_block(dec_in)
         out = self.linear(dec_out)
         return out
 
 
 class DecoderBlock(nn.Module):
-    def __init__(self, embed_size, m, device):
+    def __init__(self, d, m, device):
         super(DecoderBlock, self).__init__()
-        self.self_atten = Attention(embed_size, device)
-        self.ff = PositionWiseFeedForward(embed_size, m)
+        self.attention = Attention(d, device)
+        self.ff = PositionWiseFeedForward(d, m)
 
     def forward(self, x):
-        atten_out = self.self_atten(x, x, x)
-        ff_out = self.ff(atten_out)
+        out = self.attention(x, x, x)
+        ff_out = self.ff(out)
         return ff_out
 
 
 class PositionWiseFeedForward(nn.Module):
 
-    def __init__(self, embed_size, m):
+    def __init__(self, d, m):
         super(PositionWiseFeedForward, self).__init__()
-        self.layer = nn.Linear(embed_size, m)
+        self.layer = nn.Linear(d, m)
         self.act = nn.GELU()
 
     def forward(self, x):
@@ -69,15 +69,14 @@ class PositionalEncoding(nn.Module):
 
 class Attention(nn.Module):
 
-    def __init__(self, embed_size, device):
+    def __init__(self, d, device):
         super(Attention, self).__init__()
-        self.embed_size = embed_size
-        self.d_k = embed_size
+        self.d_k = d
         self.device = device
-        self.W_q = nn.Linear(embed_size, embed_size)
-        self.W_k = nn.Linear(embed_size, embed_size)
-        self.W_v = nn.Linear(embed_size, embed_size)
-        self.W_o = nn.Linear(embed_size, embed_size)
+        self.W_q = nn.Linear(d, d)
+        self.W_k = nn.Linear(d, d)
+        self.W_v = nn.Linear(d, d)
+        self.W_o = nn.Linear(d, d)
 
     def scaled_dot_product_attention(self, Q, K, V, mask=True):
         atten_scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(self.d_k)

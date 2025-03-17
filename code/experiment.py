@@ -124,10 +124,11 @@ class Experiment:
             device=device,
         ).to(device)
         summary(model)
+
         model_num_params = sum(p.numel() for p in model.parameters())
         if self.train_subset:
             for name, param in model.named_parameters():
-                if "attention" in name or "embed" in name or "ff" in name:
+                if "attention" in name or "embed" in name:
                     param.requires_grad = False
             summary(model)
         model_trained_params = sum(

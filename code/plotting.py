@@ -17,12 +17,14 @@ def plot_experiment(experiment, path):
     eps = 0.01
 
     for run in experiment.runs:
-        print(run.vocab_size)
+        # print(run.vocab_size)
         if not (run.n in dataset_sizes):
             dataset_sizes.append(run.n)
             unique_beginnings.append(run.unique_beginnings)
         if not (run.m in m_vals):
             m_vals.append(run.m)
+
+    print(experiment.runs)
 
     i = 0
     min_model_num_params = []
@@ -41,6 +43,8 @@ def plot_experiment(experiment, path):
                 min_m = experiment.runs[i].m
             i = i + 1
         heatmap_data.append(yrow)
+
+    print(min_model_num_params)
 
     # Reverses order of lists
     unique_beginnings_rev = unique_beginnings[::-1]
